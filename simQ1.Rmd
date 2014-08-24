@@ -1,0 +1,272 @@
+---
+title: "Simulation of the Exponential Distribution"
+author: "Yolande Korsten"
+date: "Friday, August 22, 2014"
+output: pdf_document
+---
+
+Simulation of the exponential distribution to illustrate the tenet of the **Central Limit Theorem** that states ***that the distribution of averages of iid variables, properly normalized, becomes that of a standard normal as the sample size increases***.
+
+Note that the `echo = FALSE` parameter has been added to the code chunks to prevent printing of the R code unless absolutely necessary.  To view the details of the code that has generated the simulated variables, please view R Markdown file that can be found here: <url here>.
+
+
+```{r cache=TRUE, echo=FALSE}
+## required packages
+library(plyr)
+## Setting up the global variables
+lambda<- 0.2
+n <- 40
+iseed <- 0.01
+
+## Simulation of 100 means
+nosim1 <- 100
+obs1 <-  data.frame(matrix(vector(), 0, 40, dimnames=list(c() )), stringsAsFactors=F)
+set.seed(iseed)
+
+## Collecting observations
+for (i in 1:nosim1){
+    obs1 <- rbind(obs1, (rexp(n,lambda)))
+    i <- i+1
+}  
+  
+obs1 <- mutate(obs1, obsMean=apply(obs1, 1, mean), obsSD=apply(obs1, 1, sd))  
+obsVar <- data.frame(obs1$obsSD^2/n)
+colnames(obsVar) <- "obsVar"
+obs1 <- cbind(obs1, obsVar)
+rm(obsVar)
+
+obsMean1 <- mean(obs1$obsMean)
+obsVar1 <- var(obs1$obsMean)
+
+## Simulation of 1 000 means
+nosim2 <- 1000
+obs2 <-  data.frame(matrix(vector(), 0, 40, dimnames=list(c() )), stringsAsFactors=F)
+set.seed(iseed)
+
+## Collecting observations
+for (i in 1:nosim2){
+    obs2 <- rbind(obs2, (rexp(n,lambda)))
+    i <- i+1
+}  
+  
+obs2 <- mutate(obs2, obsMean=apply(obs2, 1, mean), obsSD=apply(obs2, 1, sd))  
+obsVar <- data.frame(obs2$obsSD^2/n)
+colnames(obsVar) <- "obsVar"
+obs2 <- cbind(obs2, obsVar)
+rm(obsVar)
+
+obsMean2 <- mean(obs2$obsMean)
+obsVar2 <- var(obs2$obsMean)
+
+## Simulation of 10 000 means
+nosim3 <- 10000
+obs3 <-  data.frame(matrix(vector(), 0, 40, dimnames=list(c() )), stringsAsFactors=F)
+set.seed(iseed)
+
+## Collecting observations
+for (i in 1:nosim3){
+    obs3 <- rbind(obs3, (rexp(n,lambda)))
+    i <- i+1
+}  
+  
+obs3 <- mutate(obs3, obsMean=apply(obs3, 1, mean), obsSD=apply(obs3, 1, sd))  
+obsVar <- data.frame(obs3$obsSD^2/n)
+colnames(obsVar) <- "obsVar"
+obs3 <- cbind(obs3, obsVar)
+rm(obsVar)
+
+obsMean3 <- mean(obs3$obsMean)
+obsVar3 <- var(obs3$obsMean)
+```
+
+**1. Show where the distribution is centered at and compare it to the theoretical center of the distribution.**
+
+```{r echo=FALSE}
+theoMean <- 1/lambda
+theoSD <- 1/lambda
+theoVar <- (theoSD^2/n)
+```
+
+The theoretical mean $\sigma$ (center of the distribution) for an exponential distribution is $\frac{1}{\lambda}$ . For the purposes of this simulation ${\lambda = 0.2}$ .  The sample population ($n$) for calculation per simulation is set to $40$, and the initial number of similations will be set to $100$.  The theoretical variance for this simulation is calculated as $\frac{\sigma^2}{n}$.
+
+Given the above assumptions, the theoretical variables for this simulation are:  
+* Mean - `r theoMean`  
+* Standard Deviation - `r theoSD`  
+* Variance - `r theoVar`  
+
+Running a simulation of only 100 iterations, the observed center of the distribution is **`r obsMean1`** which is slightly higher than the expected **`r theoMean`**.  Running the simulations for 1000 iterations produces **`r obsMean2`** and for 10 000 iterations, **`r obsMean3`**. As the number of iterations increases, the observed centre of the distribution of means approaches the expected theoretical center of the distribution of $5$.
+
+**2. Show how variable it is and compare it to the theoretical variance of the distribution.**
+
+The theoretical variance of the exponential distribution is **`r theoVar`**. The 100 iteration variance is **`r obsVar1`**, which is well below the theoretical variance.  But increasing the number of sample iterations to $1 000$ and $10 000$, and running the simulation, the sample variance becomes **`r obsVar2`** and **`r obsVar3`** respectively. One can see that as the number of iterations increase, the observed variance approaches the theoretical variance.
+
+**3. Show that the distribution is approximately normal.**
+
+
+```{r echo=FALSE}
+# Multiple plot function
+# FUnction courtesy of The R Cookbook - http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
+#
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  require(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+```
+
+Plotting the means of the three simulations of 100, 1 000 and 10 000 iterations, the frequency distribution progressively resembles a normal distribution.
+
+```{r, echo=FALSE, fig.height=3, fig.width=10}
+library(ggplot2)
+
+g100 <- ggplot(obs1, aes(x=obs1$obsMean)) + geom_histogram(binwidth=.5, colour="black", fill="darkgrey") +
+    geom_vline(aes(xintercept=mean(obs1$obsMean, na.rm=T)),  
+               color="red", linetype="dashed", size=1) + xlab("Distribution (Means): 100")
+            
+      
+
+g1000 <- ggplot(obs2, aes(x=obs2$obsMean)) + geom_histogram(binwidth=.5, colour="black", fill="darkgrey") +
+    geom_vline(aes(xintercept=mean(obs2$obsMean, na.rm=T)),  
+               color="red", linetype="dashed", size=1) + xlab("Distribution (Means): 1 000")
+
+g10000 <- ggplot(obs2, aes(x=obs3$obsMean)) + geom_histogram(binwidth=.5, colour="black", fill="darkgrey") +
+    geom_vline(aes(xintercept=mean(obs3$obsMean, na.rm=T)),  
+               color="red", linetype="dashed", size=1) + xlab("Distribution (Means): 10 000")
+
+library(grid)
+multiplot(g100, g1000, g10000, cols=3)
+     
+```
+
+
+
+Plotting the distribution density of the similations illustrates that a sufficient number of samples will eventually result in a distribution of means that approximates the normal distribution more closely. 
+
+```{r, echo=FALSE, fig.height=3, fig.width=10}
+library(ggplot2)
+
+g100d <- ggplot(obs1, aes(x=obs1$obsMean)) + 
+    geom_histogram(aes(y=..density..),      
+                   binwidth=.5,
+                   colour="darkgrey", fill="grey") +
+    geom_density(alpha=.2, fill="#000000") +
+geom_vline(aes(xintercept=mean(obs1$obsMean, na.rm=T)),  
+               color="red", linetype="dashed", size=1) + xlab("Distribution (Means): 100")
+
+g1000d <- ggplot(obs2, aes(x=obs2$obsMean)) + 
+    geom_histogram(aes(y=..density..),      
+                   binwidth=.5,
+                   colour="darkgrey", fill="grey") +
+    geom_density(alpha=.2, fill="#000000") +
+geom_vline(aes(xintercept=mean(obs2$obsMean, na.rm=T)),  
+               color="red", linetype="dashed", size=1) + xlab("Distribution (Means): 1 000")
+
+g10000d <- ggplot(obs3, aes(x=obs3$obsMean)) + 
+    geom_histogram(aes(y=..density..),      
+                   binwidth=.5,
+                   colour="darkgrey", fill="grey") +
+    geom_density(alpha=.2, fill="#000000") +
+geom_vline(aes(xintercept=mean(obs3$obsMean, na.rm=T)),  
+               color="red", linetype="dashed", size=1) + xlab("Distribution (Means): 10 000")
+            
+
+
+library(grid)
+multiplot(g100d, g1000d, g10000d, cols=3)
+     
+```
+
+**4. Evaluate the coverage of the confidence interval for $\frac{1}{\lambda}$: $\bar X \pm 1.96 \frac{S}{\sqrt{n}}$ . ** 
+
+When simulating samples from a known distribution, a good test is to see whether your sample means for your similated sample populations fall within the 95% confidence interval for the actual population mean.  Below, I plot the confidence interval coverage for 100, 1 000 and 10 000 simulations.
+
+```{r echo=FALSE, cache=TRUE, fig.height=3, fig.width=10}
+
+library(ggplot2)
+
+## Coverage of 100 similations
+iseed <- 0.01
+lambdavals <- seq(0.1, 0.9, by = .05); nosim1 <- 100
+n<-40
+coverage1 <- sapply(lambdavals, function(lambda){
+x<- apply(matrix(rexp(nosim1*40, rate = lambda), nosim1),1,mean)
+ll <- x - 1.96 * x/sqrt(n)
+ul <- x + 1.96 * x/sqrt(n)
+mean(ll < 1/lambda & ul > 1/lambda)
+})
+
+cov1 <- ggplot(data.frame(lambdavals, coverage1), aes(x = lambdavals, y = coverage1)) + geom_line(size = 1) + geom_hline(yintercept = 0.95)+ylim(0, 1.0)
+
+## Coverage of 1 000 similations
+
+nosim2 <- 1000
+n<-40
+coverage2 <- sapply(lambdavals, function(lambda){
+x<- apply(matrix(rexp(nosim2*40, rate = lambda), nosim2),1,mean)
+ll <- x - 1.96 * x/sqrt(n)
+ul <- x + 1.96 * x/sqrt(n)
+mean(ll < 1/lambda & ul > 1/lambda)
+})
+
+cov2 <- ggplot(data.frame(lambdavals, coverage2), aes(x = lambdavals, y = coverage2)) + geom_line(size = 1) + geom_hline(yintercept = 0.95)+ylim(0, 1.0)
+
+## Coverage of 10 000 similations
+nosim3 <- 10000
+n<-40
+coverage3 <- sapply(lambdavals, function(lambda){
+x<- apply(matrix(rexp(nosim3*40, rate = lambda), nosim3),1,mean)
+ll <- x - 1.96 * x/sqrt(n)
+ul <- x + 1.96 * x/sqrt(n)
+mean(ll < 1/lambda & ul > 1/lambda)
+})
+
+cov3 <- ggplot(data.frame(lambdavals, coverage3), aes(x = lambdavals, y = coverage3)) + geom_line(size = 1) + geom_hline(yintercept = 0.95)+ylim(0, 1.0)
+
+library(grid)
+multiplot(cov1, cov2, cov3, cols=3)
+
+```
+
+For 100 simulations, there is a more than 95% chance that the expected population mean $\mu$ of $5$ will be found in the the distrubition of sample means, though there is a lot of variability.  On simulating 1 000 and 10 000 samples, the variability is reduced and the confidence that the simulated (estimated) mean of your sample population will be close to the true population mean approaches 95%.
+
+
