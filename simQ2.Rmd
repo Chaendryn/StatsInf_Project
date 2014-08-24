@@ -1,0 +1,244 @@
+---
+title: 'Analysis: Impact of Supplementation on Tooth Growth'
+author: "Yolande Korsten"
+date: "Sunday, August 24, 2014"
+output: pdf_document
+---
+
+Exploratory analysis and inference on the impact of supplementation on the growth of teeth, based on dosage and supplement used.
+
+Note that the `echo = FALSE` parameter has been added to the code chunks to prevent printing of the R code unless absolutely necessary.  To view the details of the code, please view R Markdown file that can be found here: https://github.com/Chaendryn/StatsInf_Project/blob/master/simQ2.Rmd.
+
+
+```{r cache=TRUE, echo=FALSE}
+## required packages
+library(datasets)
+
+## reading in the dataset
+rawTooth <- data.frame(ToothGrowth)
+ojData <- data.frame(rawTooth[rawTooth$supp == "OJ",])
+vcData <- data.frame(rawTooth[rawTooth$supp == "VC",])
+dose05 <- data.frame(rawTooth[rawTooth$dose == 0.5,])
+dose10 <- data.frame(rawTooth[rawTooth$dose == 1.0,])
+dose20 <- data.frame(rawTooth[rawTooth$dose == 2.0,])
+##rawTooth$supp <- as.character(rawTooth$supp)
+```
+
+##**1. Exploratory Analysis of the Tooth Growth Data**
+
+A trial was conducted to compare the relative impact of supplementation on the rate of tooth growth in guinea pigs, as measured by the length of the actual tooth.  Two supplements were tested - $Orange Juice (OJ)$ and $Vitamin C (VC)$ - in different doses - $0.5$, $1.0$ and $2.0$.  
+
+```{r echo=FALSE}
+# Multiple plot function
+# FUnction courtesy of The R Cookbook - http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
+#
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  require(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
+```
+
+
+##**2. Basic Summary Statistics of the Data**
+
+```{r echo=FALSE, results='hide'}
+## Basic Summary tables by supplement
+oj <- summary(rawTooth[rawTooth$supp=="OJ",])
+vc <- summary(rawTooth[rawTooth$supp=="VC",])
+```
+
+A basic summary of the data by supplement shows that the median tooth length on ***Orange Juice*** is **$22.70$**, with a minimum of **$8.20$** and a maximum of **$30.90$**. The average tooth length is **$20.66$**. That the median tooth length on ***Vitamin C*** is **$16.50$**, with a minimum of **$4.20$** and a maximum of **$33.90$**. The average tooth length is **$16.96$**
+
+Given the above statistics, the early conclusion is that supplementation with Orange Juice provides a better average tooth growth in the subjects, with smaller variation across subjects.
+
+##**3. Hypothesis testing** 
+
+```{r echo=FALSE}
+## Setting up population statistics
+
+varPop <- var(rawTooth$len)
+sdPop <- sd(rawTooth$len)
+muPop <- mean(rawTooth$len)
+popN <- 60
+
+
+## Orange Juice
+varOJ <- var(ojData$len)
+sdOJ <- sd(ojData$len)
+muOJ <- mean(ojData$len)
+ojN <- 30
+
+
+## Orange Juice
+varVC <- var(vcData$len)
+sdVC <- sd(vcData$len)
+muVC <- mean(vcData$len)
+vcN <- 30
+
+```
+
+**$H_0a$ : Supplementation has no impact on the tooth growth ($\mu = \mu_0$).**
+
+The population mean $\mu_0$ of tooth length is `r muPop` and the population standard deviation $\sigma_0$ is `r sdPop`.  
+
+**$H_1a$ : Supplementation of Orange Juice has an effect ($\mu_1a \neq \mu_0$).**  
+**$H_1b$ : Supplementation of Vitamen C has an effect. ($\mu_1b \neq \mu_0$).**
+
+The sample mean $\mu_1a$ of tooth length is `r muOJ` across all dosages.  
+The sample mean $\mu_1b$ of tooth length is `r muVC` across all dosages. 
+
+This is clearly not equal to the population mean, therefore one can surmise that there is some impact on tooth length with supplementation - though it's not clear yet whether this impact is significant.
+
+```{r echo=FALSE}
+t.test(rawTooth$len ~ rawTooth$supp, paired = FALSE, var.equal = FALSE, data = rawTooth)
+```
+
+The $T statistic$ in this case refers to the difference in average tooth length whether OJ or VC was used as a supplement across all dosages.  $t = 1.9153$ shows that there is very little difference in average tooth length whichever supplement was used across all dosages, but the $p-value = 0.06063$ is larger than the 0.05 confidence level we were expecting, therefore we can accept the null hypothesis ($H_0a$). 
+
+**$H_0b$ : Supplementation at different doses has no effect dependent on dosage.** 
+
+```{r echo=FALSE, fig.width=10,  fig.height=3}
+library(ggplot2)
+gdose05 <- ggplot(data=dose05, aes(x=supp, y=len, fill=supp)) + geom_boxplot() +
+      guides(fill=FALSE) +
+      ylab("Tooth Length") +
+      xlab("Supplement") +
+      ggtitle("Dosage: 0.5")
+
+gdose10 <- ggplot(data=dose10, aes(x=supp, y=len, fill=supp)) + geom_boxplot() +
+      guides(fill=FALSE) +
+      ylab("Tooth Length") +
+      xlab("Supplement") +
+      ggtitle("Dosage: 1.0")
+
+gdose20 <- ggplot(data=dose20, aes(x=supp, y=len, fill=supp)) + geom_boxplot() +
+      guides(fill=FALSE) +
+      ylab("Tooth Length") +
+      xlab("Supplement") +
+      ggtitle("Dosage: 2.0")
+
+library(grid)
+multiplot(gdose05, gdose10, gdose20, cols=3)
+
+```
+
+From the plot above we can see that at 0.5 and 1.0 dosages, Orange Juice out-performs Vitamin C with a wider tooth length distribution and a higher sample average.  But once we reach the 2.0 dosage mark, Vitamin C has a similar average tooth growth, although bigger variance in the sample.
+
+
+**$H_0c$ : Supplementation of Orange Juice is no better than Vitamin C at 0.5 dosage.**
+
+```{r echo=FALSE}
+t.test(dose05$len ~ dose05$supp, paired = FALSE, var.equal = FALSE, data = dose05)
+```
+
+The $T statistic$ = $3.1697$ shows that there is a significant variation in tooth length based on the supplement used. A $p-value = 0.006359$ shows difference is not by chance, therefore we reject the null hypothesis ($H_0c$).
+
+**$H_0d$ : Supplementation of Orange Juice is no better than Vitamin C at 1.0 dosage.** 
+
+```{r echo=FALSE}
+t.test(dose10$len ~ dose10$supp, paired = FALSE, var.equal = FALSE, data = dose10)
+```
+
+The $T statistic$ = $4.0328$ shows that there is a significant variation in tooth length based on the supplement used. A $p-value = 0.0010338$ shows the difference in we are not by chance, therefore we reject the null hypothesis ($H_0d$).
+
+
+**$H_0e$ : Supplementation of Orange Juice is no better than Vitamin C at 2.0 dosage.** 
+
+```{r echo=FALSE}
+t.test(dose20$len ~ dose20$supp, paired = FALSE, var.equal = FALSE, data = dose20)
+```
+
+The $T statistic$ = $-0.0461$ shows that there is very little variation in tooth length based on the supplement used. A $p-value = 0.9639$ shows that the variation is by chance, therefore we fail to reject the null hypothesis ($H_0e$).
+
+```{r echo=FALSE, fig.width=10,  fig.height=3}
+library(ggplot2)
+
+Len05 <- ggplot(dose05, aes(x=dose05$len)) + 
+      geom_histogram(aes(y=..density..),      
+            binwidth=.5,
+            colour="darkgrey", fill="grey") +
+      geom_density(alpha=.2, fill="#000000") +
+      geom_vline(aes(xintercept=mean(dose05$len, na.rm=T)),  
+            color="red", linetype="dashed", size=1) + 
+      xlab("Distribution of Tooth Length") +
+      ggtitle("Dosage 0.5")
+
+
+Len10 <- ggplot(dose10, aes(x=dose10$len)) + 
+      geom_histogram(aes(y=..density..),      
+            binwidth=.5,
+            colour="darkgrey", fill="grey") +
+      geom_density(alpha=.2, fill="#000000") +    
+      geom_vline(aes(xintercept=mean(dose10$len, na.rm=T)),  
+            color="red", linetype="dashed", size=1) + 
+      xlab("Distribution of Tooth Length") +
+      ggtitle("Dosage 0.5")
+
+Len20 <- ggplot(dose20, aes(x=dose20$len)) + 
+      geom_histogram(aes(y=..density..),      
+            binwidth=.5,
+            colour="darkgrey", fill="grey") +
+      geom_density(alpha=.2, fill="#000000") +
+      geom_vline(aes(xintercept=mean(dose20$len, na.rm=T)),  
+            color="red", linetype="dashed", size=1) + 
+      xlab("Distribution of Tooth Length") +
+      ggtitle("Dosage 2.0")
+
+library(grid)
+multiplot(Len05, Len10, Len20, cols=3)
+```
+
+
+
+##**4. Conclusions**  
+
+**Assumptions made:**  
+* The 60 guinea pigs in the dataset are the whole of the population. Therefore the population mean and standard deviations are calculated on the complete dataset.   
+* Each guinea pig was given either Orange Juice or Vitamin C - the observations are not paired and are independent.
+
+Conclusions drawn from the above testing indicates that supplementation of either Orange Juice or Vitamin C taken across the whole population with no significance given to the dosage, results in very little difference being seen.  
+
+It is therefore important to test for dosage specific impacts.  From the tests done, it is clear that Orange Juice performs better at lower dosages (0.5 and 1.0) to promote tooth growth than does Vitamin C.  This difference however become markedly smaller once higher dosages are reached (2.0).
+
+**Final conclusion:** Supplementation has an impact on tooth growth in guinea pigs but it is dosage dependent.
